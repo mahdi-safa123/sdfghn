@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>نظام حساب الأوراق والسعر</title>
+  <style>
+    body { font-family: Arial; background: #f2f2f2; padding: 20px; max-width: 800px; margin: auto; border-radius: 10px; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; font-size: 16px; }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; background: white; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    #totals { margin-top: 20px; font-size: 18px; font-weight: bold; }
+    .btns { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+    button { cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <h2>🧾 نظام حساب عدد الأوراق والسعر</h2>
+
+  <label>اسم الملف:</label>
+  <input type="text" id="fileName" placeholder="مثال: ملف الرياضيات">
+
+  <label>عدد الأوراق:</label>
+  <input type="number" id="pageCount" placeholder="مثال: 12">
+
+  <label>سعر الورقة الواحدة (دينار):</label>
+  <input type="number" id="pricePerPage" value="100">
+
+  <button onclick="addFile()">➕ إضافة الملف</button>
+
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>الرقم</th>
+        <th>اسم الملف</th>
+        <th>عدد الأوراق</th>
+        <th>السعر (دينار)</th>
+        <th>❌</th>
+      </tr>
+    </thead>
+    <tbody id="fileTable"></tbody>
+  </table>
+
+  <div id="totals">
+    📄 إجمالي الأوراق: 0<br>
+    💰 إجمالي السعر: 0 دينار
+  </div>
+
+  <div class="btns">
+    <button onclick="printPage()">🖨️ طباعة الفاتورة</button>
+    <button onclick="exportToExcel()">📤 تصدير إلى Excel</button>
+    <button onclick="resetAll()">♻️ إعادة ضبط الكل</button>
+  </div>
+
+  <script>
+    let data = JSON.parse(localStorage.getItem("fileData") || "[]");
+    let index = 1;
+
+    function updateDisplay() {
+      const tbody = document.getElementById("fileTable");
+      tbody.innerHTML = "";
+      let totalPages = 0, totalPrice = 0;
+
+      data.forEach((item, i) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${item.name}</td>
+          <td>${item.pages}</td>
+          <td>${item.price}</td>
+          <td><button onclick="removeFile(${i})">🗑️</button></td>
+        `;
+        tbody.appendChild(row);
+        totalPages += item.pages;
+        totalPrice += item.price;
+      });
+
+      document.getElementById("totals").innerHTML = `
+        📄 إجمالي الأوراق: ${totalPages}<br>
+        💰 إجمالي السعر: ${totalPrice} دينار
+      `;
+      localStorage.setItem("fileData", JSON.stringify(data));
+    }
+
+    function addFile() {
+      const name = document.getElementById("fileName").value;
+      const pages = parseInt(document.getElementById("pageCount").value);
+      const pricePerPage = parseInt(document.getElementById("pricePerPage").value);
+
+      if (!name || isNaN(pages) || pages <= 0 || isNaN(pricePerPage) || pricePerPage <= 0) {
+        alert("يرجى إدخال جميع الحقول بشكل صحيح.");
+        return;
+      }
+
+      const filePrice = pages * pricePerPage;
+      data.push({ name, pages, price: filePrice });
+      updateDisplay();
+
+      document.getElementById("fileName").value = '';
+      document.getElementById("pageCount").value = '';
+    }
+
+    function removeFile(i) {
+      if (confirm("هل تريد حذف هذا الملف؟")) {
+        data.splice(i, 1);
+        updateDisplay();
+      }
+    }
+
+    function resetAll() {
+      if (confirm("هل تريد إعادة ضبط كل البيانات؟")) {
+        data = [];
+        localStorage.removeItem("fileData");
+        updateDisplay();
+      }
+    }
+
+    function printPage() {
+      window.print();
+    }
+
+    function exportToExcel() {
+      let csv = "الرقم,اسم الملف,عدد الأوراق,السعر (دينار)\n";
+      data.forEach((item, i) => {
+        csv += `${i + 1},${item.name},${item.pages},${item.price}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "تقرير_الملفات.csv";
+      a.click();
+    }
+
+    // تحميل البيانات من المتصفح
+    window.onload = updateDisplay;
+  </script>
+
+</body>
+</html>
