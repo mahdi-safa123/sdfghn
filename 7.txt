@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>نظام حساب سعر الملفات PDF</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f9f9f9; max-width: 700px; margin: auto; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; font-size: 16px; }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; background: white; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    #totals { margin-top: 20px; font-weight: bold; font-size: 18px; }
+  </style>
+</head>
+<body>
+
+<h2>📄 نظام حساب سعر ملفات PDF حسب عدد الصفحات</h2>
+
+<label>سعر الورقة الواحدة (دينار):</label>
+<input type="number" id="pricePerPage" value="100" />
+
+<label>اختيار ملف PDF:</label>
+<input type="file" id="pdfFile" accept="application/pdf" />
+
+<button onclick="handlePDF()">📥 إضافة الملف</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>اسم الملف</th>
+      <th>عدد الصفحات</th>
+      <th>السعر (دينار)</th>
+    </tr>
+  </thead>
+  <tbody id="fileTable"></tbody>
+</table>
+
+<div id="totals">📄 إجمالي الصفحات: 0 | 💰 إجمالي السعر: 0 دينار</div>
+
+<script>
+  let index = 1;
+  let totalPages = 0;
+  let totalPrice = 0;
+
+  function handlePDF() {
+    const fileInput = document.getElementById("pdfFile");
+    const pricePerPage = parseInt(document.getElementById("pricePerPage").value);
+    if (!fileInput.files.length || isNaN(pricePerPage)) {
+      alert("يرجى اختيار ملف PDF صحيح وإدخال سعر الورقة");
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const fileReader = new FileReader();
+
+    fileReader.onload = function() {
+      const typedarray = new Uint8Array(this.result);
+
+      pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+        const numPages = pdf.numPages;
+        const price = numPages * pricePerPage;
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${index++}</td>
+          <td>${file.name}</td>
+          <td>${numPages}</td>
+          <td>${price}</td>
+        `;
+
+        document.getElementById("fileTable").appendChild(row);
+
+        totalPages += numPages;
+        totalPrice += price;
+        document.getElementById("totals").textContent = `📄 إجمالي الصفحات: ${totalPages} | 💰 إجمالي السعر: ${totalPrice} دينار`;
+
+        fileInput.value = "";
+      });
+    };
+
+    fileReader.readAsArrayBuffer(file);
+  }
+</script>
+
+</body>
+</html>
